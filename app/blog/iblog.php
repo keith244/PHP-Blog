@@ -44,7 +44,7 @@ function createPost($conn){
 
 function getPosts($conn){
     $stmt = $conn-> prepare("
-    SELECT blog_post.id, blog_post.title, blog_post.body, users.username
+    SELECT blog_post.id, blog_post.title, blog_post.body, blog_post.user_id, users.username
     FROM blog_post
     JOIN users ON blog_post.user_id = users.id
     ORDER BY blog_post.id DESC
@@ -57,36 +57,63 @@ function getPosts($conn){
     return $result -> fetch_all(MYSQLI_ASSOC);
 }
 
-function deletePost($conn,$post_id){
+function deletePost($conn,$post_id,$user_id){
     $stmt = $conn-> prepare("
-    DELETE from blog_post where blog_post.id = ?
+    DELETE from blog_post 
+    where blog_post.id = ? and user_id=?
     ");
-    $stmt -> bind_param("i",$post_id);
-    if ($stmt->execute()){
-        $_SESSION['success'] = "Post deleted successfully";
-        header("Location: ../templates/index.php");
+    $stmt -> bind_param("ii",$post_id,$user_id);
+
+    // 
+    if($stmt->execute()){
+        if($stmt->affected_rows>0){
+            $_SESSION['success'] = "Post deleted successfully";
+        }else{
+            $_SESSION['errors'] = ['You are not authorised to delete this post!'];
+        }
+        header("Location: ../../templates/index.php");
         exit();
     }else{
-        $_SESSION['errors'] = ['Failed to delete post.'];
+        $_SESSION['errors'] = ['Failed to delete post!'];
         header("Location: ../../templates/index.php");
         exit();
     }
+
+    // 
+
+    // if ($stmt->execute()){
+    //     $_SESSION['success'] = "Post deleted successfully";
+    //     header("Location: ../templates/index.php");
+    //     exit();
+    // }else{
+    //     $_SESSION['errors'] = ['Failed to delete post.'];
+    //     header("Location: ../../templates/index.php");
+    //     exit();
+    // }
     $stmt->close();
 }
 
-function updatePost($conn,$post_id, $post_title, $post_body){
+function updatePost($conn,$post_id, $post_title, $post_body, $user_id){
     $stmt = $conn -> prepare("
-    UPDATE blog_post SET title = ?, body= ? where id=?
+    UPDATE blog_post 
+    SET title = ?, body= ? 
+    where id=? and user_id=?
     ");
-    $stmt -> bind_param("ssi", $post_title,$post_body,$post_id);
+    $stmt -> bind_param("ssii", $post_title,$post_body,$post_id, $user_id);
 
     if($stmt->execute()){
-        $_SESSION['success'] = "Post updated successfully!";
+        if($stmt->affected_rows>0){
+            $_SESSION['success'] = "Post updated successfully";
+        }else{
+            $_SESSION['errors'] = ['You are not authorised to update this post!'];
+        }
         header("Location: ../../templates/index.php");
+        exit();
     }else{
-        $_SESSION['errors'] = ['Failed to update post'];
+        $_SESSION['errors'] = ['Failed to update post!'];
+        header("Loaction: ../../templates/index.php");
+        exit();
     }
-
     $stmt->close();
 }
 
@@ -94,8 +121,8 @@ if ($_SERVER['REQUEST_METHOD']=="POST"){
     if ($_POST['action']==='create_post'){
         createPost($conn);
     }elseif(isset($_POST['delete'])){
-        deletePost($conn, $_POST['post_id']);
+        deletePost($conn, $_POST['post_id'],$_POST['user_id']);
     }elseif($_POST['action'] ==='update_post'){
-        updatePost($conn, $_POST['post_id'], $_POST['post_title'],$_POST['post_body']);
+        updatePost($conn, $_POST['post_id'], $_POST['post_title'],$_POST['post_body'],$_POST['user_id']);
     }
 }

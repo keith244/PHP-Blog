@@ -30,7 +30,7 @@ $posts = getPosts($conn);
     </div>
 
     <div class="container">
-        <?php
+    <?php
         if (!isset($_SESSION['username'])) {
             $_SESSION['errors'] = ['Please login first'];
             header("Location: ./login.php");
@@ -53,6 +53,11 @@ $posts = getPosts($conn);
                     <h3>" . htmlspecialchars($post['title']) . "</h3>
                     <p class='post-author'><strong>By:</strong> " . strtoupper(htmlspecialchars($post['username'])) . "</p>
                     <p class='post-body'>" . nl2br(htmlspecialchars($post['body'])) . "</p>
+                ";
+
+                // show buttons only if author
+                if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $post['user_id']) {
+                    echo "
                     <div class='post-actions'>
                         <a href='./edit_post.php?id=" . $post['id'] . "' class='edit-btn'>Update</a>
                         <form action='' method='post'>
@@ -61,11 +66,13 @@ $posts = getPosts($conn);
                             <button type='submit' name='delete'>Delete</button>
                         </form>
                     </div>
-                </div>
-                ";
+                    ";
+                }
+
+                echo "</div>";
             }
         }
-        ?>
+    ?>
     </div>
 
 </body>
